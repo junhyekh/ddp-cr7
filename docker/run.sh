@@ -18,7 +18,6 @@ IMAGE_TAG='hhjjhh0425/ddp:test'
 # * Current working git repository mounted at ${HOME}
 # * 8Gb Shared Memory
 docker run -it \
-    -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix \
     --mount type=bind,source="${REPO_ROOT}",target="/root/$(basename ${REPO_ROOT})" \
     --shm-size=32g \
     --network host \

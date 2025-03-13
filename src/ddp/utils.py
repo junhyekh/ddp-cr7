@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 import pinocchio as pin
 from pinocchio.robot_wrapper import RobotWrapper
 
@@ -7,13 +8,15 @@ from pinocchio.robot_wrapper import RobotWrapper
 """
 
 class G1Loader:
-    path: str = '../data/robots/g1'
+    path: Optional[str] = None
     urdf_filename: str = "g1_29dof_rev_1_0.urdf"
     has_rotor_parameters = False
     free_flyer = True
     model_path = None
 
     def __init__(self):
+        if self.path is None:
+            self.path = Path(__file__).parents[2] / 'data/robots/g1'
         urdf_path = Path(self.path) / self.urdf_filename
         print(urdf_path)
         if not urdf_path.exists():
