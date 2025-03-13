@@ -32,12 +32,13 @@ actuation = crocoddyl.ActuationModelFloatingBase(state)
 # Set integration time
 DT = 5e-2
 T = 40
-target = np.array([0.4, 0, 0.0])
+target = np.array([0.4, 0, 0.8])
 
 # Initialize reference state, target and reference CoM
 rightFoot = "right_ankle_roll_link"
 leftFoot = "left_ankle_roll_link"
-endEffector = "left_rubber_hand"
+# endEffector = "left_rubber_hand"
+endEffector = 'left_hand_palm_joint'
 endEffectorId = rmodel.getFrameId(endEffector)
 rightFootId = rmodel.getFrameId(rightFoot)
 leftFootId = rmodel.getFrameId(leftFoot)
@@ -47,7 +48,8 @@ pinocchio.forwardKinematics(rmodel, rdata, q0)
 pinocchio.updateFramePlacements(rmodel, rdata)
 rfPos0 = rdata.oMf[rightFootId].translation
 lfPos0 = rdata.oMf[leftFootId].translation
-refGripper = rdata.oMf[rmodel.getFrameId("left_rubber_hand")].translation
+print(rfPos0, lfPos0)
+refGripper = rdata.oMf[rmodel.getFrameId(endEffector)].translation
 comRef = (rfPos0 + lfPos0) / 2
 comRef[2] = pinocchio.centerOfMass(rmodel, rdata, q0)[2].item()
 
@@ -58,7 +60,7 @@ supportContactModelLeft = crocoddyl.ContactModel6D(
     state,
     leftFootId,
     pinocchio.SE3.Identity(),
-    pinocchio.LOCAL,
+    pinocchio.LOCAL_WORLD_ALIGNED,
     actuation.nu,
     np.array([0, 40]),
 )
@@ -66,7 +68,7 @@ supportContactModelRight = crocoddyl.ContactModel6D(
     state,
     rightFootId,
     pinocchio.SE3.Identity(),
-    pinocchio.LOCAL,
+    pinocchio.LOCAL_WORLD_ALIGNED,
     actuation.nu,
     np.array([0, 40]),
 )
@@ -123,7 +125,7 @@ footTrackingResidual = crocoddyl.ResidualModelFramePlacement(
     state, leftFootId, pinocchio.SE3(np.eye(3), np.array([0.0, 0.4, 0.0])), actuation.nu
 )
 footTrackingActivation = crocoddyl.ActivationModelWeightedQuad(
-    np.array([1, 1, 0.1] + [1.0] * 3) ** 2
+    np.array([1, 1, 1] + [1.0] * 3) ** 2
 )
 footTrackingCost1 = crocoddyl.CostModelResidual(
     state, footTrackingActivation, footTrackingResidual
@@ -197,7 +199,8 @@ problem = crocoddyl.ShootingProblem(
 )
 
 # Creating the DDP solver for this OC problem, defining a logger
-solver = crocoddyl.SolverBoxFDDP(problem)
+# solver = crocoddyl.SolverBoxFDDP(problem)
+solver = crocoddyl.SolverIntro(problem)
 if WITHPLOT:
     solver.setCallbacks(
         [
@@ -230,7 +233,22 @@ if WITHDISPLAY:
                 "world/point", [*target.tolist(), 0.0, 0.0, 0.0, 1.0]
             )  # xyz+quaternion
         except Exception:
-            display = crocoddyl.MeshcatDisplay(robot)
+            print(target[None].shape,
+             target[None].repeat((solver.problem.T + 1), 1).shape
+            )
+            # print( np.concatenate(
+            #             [np.repeat(np.array([0.0, 0.4, 0.0]), 2*T, axis=0),
+            #             np.repeat(np.array([0.3, 0.15, 0.35]), 2*T, axis=0)
+            #             ], axis=0
+            #         ).shape)
+            display = crocoddyl.MeshcatDisplay(robot,
+            targets={endEffector: np.repeat(target[None], (solver.problem.T + 1), axis=0),
+                    leftFoot: np.concatenate(
+                        [np.repeat(np.array([[0.0, 0.4, 0.0]]), 2*T, axis=0),
+                        np.repeat(np.array([[0.3, 0.15, 0.35]]), 2*T+ 1, axis=0)
+                        ], axis=0
+                    )
+            })
     display.rate = -1
     display.freq = 1
     while True:
@@ -243,7 +261,7 @@ pinocchio.forwardKinematics(rmodel, rdata, xT[: state.nq])
 pinocchio.updateFramePlacements(rmodel, rdata)
 com = pinocchio.centerOfMass(rmodel, rdata, xT[: state.nq])
 finalPosEff = np.array(
-    rdata.oMf[rmodel.getFrameId("left_rubber_hand")].translation.T.flat
+    rdata.oMf[rmodel.getFrameId(endEffector)].translation.T.flat
 )
 
 print("Finally reached = ({:.3f}, {:.3f}, {:.3f})".format(*finalPosEff))

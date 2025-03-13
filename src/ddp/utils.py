@@ -3,6 +3,9 @@ from typing import Optional
 import pinocchio as pin
 from pinocchio.robot_wrapper import RobotWrapper
 import joblib
+
+import pink
+
 """
     G1 loading based on https://github.com/Gepetto/example-robot-data
 """
@@ -33,6 +36,20 @@ class G1Loader:
         self.srdf_path = None
         self.robot.q0 = pin.neutral(self.robot.model)
         self.robot.urdf = urdf_path
+        # left_foot_id = self.robot.model.getFrameId('left_ankle_roll_link')
+        # right_foot =self.robot.model.getFrameId('right_ankle_roll_link')
+        # print(self.robot.data.oMf[left_foot_id],
+        # self.robot.data.oMf[right_foot]
+        # )
+        cfg = pink.Configuration(self.robot.model, self.robot.data,
+                        self.robot.q0)
+
+        pelvis_from_rf = cfg.get_transform_frame_to_world(
+            'right_ankle_roll_link')
+        pelvis_from_lf = cfg.get_transform_frame_to_world(
+            'left_ankle_roll_link')
+        self.robot.q0[2] = 0.028531 + -pelvis_from_rf.translation[-1]
+        
 
         if self.free_flyer:
             self.addFreeFlyerJointLimits()
@@ -44,6 +61,20 @@ class G1Loader:
         lb = self.robot.model.lowerPositionLimit
         lb[:7] = -1
         self.robot.model.lowerPositionLimit = lb
+
+class dataloader:
+    path: Optional[str] = None
+    def __init__(self):
+        if self.path is None:
+            self.path = Path(__file__).parents[2] / 'data/traj/ddp_cr7_data.pkl'
+        self.data = joblib.load(self.path)
+        print(self.data.keys())
+
+    def get_data(self):
+        pass
+        """
+        return data
+        """
 
 def get_data(data_path: str):
     link_names = {

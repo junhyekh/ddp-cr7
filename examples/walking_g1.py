@@ -65,7 +65,7 @@ for i, phase in enumerate(GAITPHASES):
     for key, value in phase.items():
         if key == "walking":
             # Creating a walking problem
-            solver[i] = crocoddyl.SolverFDDP(
+            solver[i] = crocoddyl.SolverIntro(
                 gait.createWalkingProblem(
                     x0,
                     value["stepLength"],
@@ -77,7 +77,7 @@ for i, phase in enumerate(GAITPHASES):
             )
         elif key == "jumping":
             # Creating a jumping problem
-            solver[i] = crocoddyl.SolverFDDP(
+            solver[i] = crocoddyl.SolverIntro(
                 gait.createJumpingProblem(
                     x0,
                     value["jumpHeight"],
