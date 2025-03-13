@@ -3,6 +3,7 @@ from typing import Optional
 import pinocchio as pin
 from pinocchio.robot_wrapper import RobotWrapper
 import joblib
+import numpy as np
 
 import pink
 
@@ -17,7 +18,7 @@ class G1Loader:
     free_flyer = True
     model_path = None
 
-    def __init__(self):
+    def __init__(self, rpy=None):
         if self.path is None:
             self.path = Path(__file__).parents[2] / 'data/robots/g1'
         urdf_path = Path(self.path) / self.urdf_filename
@@ -49,7 +50,9 @@ class G1Loader:
         pelvis_from_lf = cfg.get_transform_frame_to_world(
             'left_ankle_roll_link')
         self.robot.q0[2] = 0.028531 + -pelvis_from_rf.translation[-1]
-        
+        if rpy is not None:
+            R = pin.Quaternion(pin.utils.rpyToMatrix(0.0, 0.0, -np.pi / 2))
+            self.robot.q0[3:7] = np.asarray([R.x,R.y,R.z,R.w])
 
         if self.free_flyer:
             self.addFreeFlyerJointLimits()
@@ -87,32 +90,32 @@ link_names = {
         "right_shoulder_yaw_joint": 17,
         "right_elbow_joint": 19,
     }
-    smpl_joint_names = [
-        "PELVIS", 
-        "L_HIP", 
-        "R_HIP", 
-        "SPINE1", 
-        "L_KNEE", 
-        "R_KNEE", 
-        "SPINE2", 
-        "L_ANKLE", 
-        "R_ANKLE", 
-        "SPINE3", 
-        "L_FOOT", 
-        "R_FOOT", 
-        "NECK", 
-        "L_COLLAR", 
-        "R_COLLAR", 
-        "HEAD", 
-        "L_SHOULDER", 
-        "R_SHOULDER", 
-        "L_ELBOW", 
-        "R_ELBOW", 
-        "L_WRIST", 
-        "R_WRIST", 
-        "L_HAND", 
-        "R_HAND", 
-    ]
+smpl_joint_names = [
+    "PELVIS", 
+    "L_HIP", 
+    "R_HIP", 
+    "SPINE1", 
+    "L_KNEE", 
+    "R_KNEE", 
+    "SPINE2", 
+    "L_ANKLE", 
+    "R_ANKLE", 
+    "SPINE3", 
+    "L_FOOT", 
+    "R_FOOT", 
+    "NECK", 
+    "L_COLLAR", 
+    "R_COLLAR", 
+    "HEAD", 
+    "L_SHOULDER", 
+    "R_SHOULDER", 
+    "L_ELBOW", 
+    "R_ELBOW", 
+    "L_WRIST", 
+    "R_WRIST", 
+    "L_HAND", 
+    "R_HAND", 
+]
 
 class dataloader:
     path: Optional[str] = None
@@ -125,10 +128,10 @@ class dataloader:
     def get_data(self):
         smpl_joints = self.data['smpl_joints']
         for link_name, smpl_idx in link_names.items():
-        print(f"{link_name}: {smpl_joint_names[smpl_idx]}")
+            print(f"{link_name}: {smpl_joint_names[smpl_idx]}")
         ret = {link_name: smpl_joints[:, link_id, :] for link_name, link_id in link_names.items()}
         return ret
-        
+
 def get_data(data_path: str):
     
     with open(data_path, "rb") as f:
