@@ -62,22 +62,7 @@ class G1Loader:
         lb[:7] = -1
         self.robot.model.lowerPositionLimit = lb
 
-class dataloader:
-    path: Optional[str] = None
-    def __init__(self):
-        if self.path is None:
-            self.path = Path(__file__).parents[2] / 'data/traj/ddp_cr7_data.pkl'
-        self.data = joblib.load(self.path)
-        print(self.data.keys())
-
-    def get_data(self):
-        pass
-        """
-        return data
-        """
-
-def get_data(data_path: str):
-    link_names = {
+link_names = {
         "left_hip_pitch_joint": 1,
         "left_hip_roll_joint": 1,
         "left_hip_yaw_joint": 1,
@@ -128,6 +113,24 @@ def get_data(data_path: str):
         "L_HAND", 
         "R_HAND", 
     ]
+
+class dataloader:
+    path: Optional[str] = None
+    def __init__(self):
+        if self.path is None:
+            self.path = Path(__file__).parents[2] / 'data/traj/ddp_cr7_data.pkl'
+        self.data = joblib.load(self.path)
+        print(self.data.keys())
+
+    def get_data(self):
+        smpl_joints = self.data['smpl_joints']
+        for link_name, smpl_idx in link_names.items():
+        print(f"{link_name}: {smpl_joint_names[smpl_idx]}")
+        ret = {link_name: smpl_joints[:, link_id, :] for link_name, link_id in link_names.items()}
+        return ret
+        
+def get_data(data_path: str):
+    
     with open(data_path, "rb") as f:
         data = joblib.load(f)
     smpl_joints = data['smpl_joints']
