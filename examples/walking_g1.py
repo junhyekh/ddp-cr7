@@ -8,7 +8,7 @@ import numpy as np
 import pinocchio
 
 import crocoddyl
-from crocoddyl.utils.biped import SimpleBipedGaitProblem, plotSolution
+from biped import SimpleBipedGaitProblem, plotSolution
 from ddp.utils import G1Loader
 
 WITHDISPLAY = "display" in sys.argv or "CROCODDYL_DISPLAY" in os.environ

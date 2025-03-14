@@ -47,10 +47,9 @@ class G1Loader:
 
         pelvis_from_rf = cfg.get_transform_frame_to_world(
             'right_ankle_roll_link')
-        pelvis_from_lf = cfg.get_transform_frame_to_world(
-            'left_ankle_roll_link')
         self.robot.q0[2] = 0.028531 + -pelvis_from_rf.translation[-1]
         if rpy is not None:
+            self.robot.q0[1] = -0.15
             R = pin.Quaternion(pin.utils.rpyToMatrix(0.0, 0.0, -np.pi / 2))
             self.robot.q0[3:7] = np.asarray([R.x,R.y,R.z,R.w])
 
@@ -127,10 +126,27 @@ class dataloader:
 
     def get_data(self):
         smpl_joints = self.data['smpl_joints']
-        for link_name, smpl_idx in link_names.items():
-            print(f"{link_name}: {smpl_joint_names[smpl_idx]}")
-        ret = {link_name: smpl_joints[:, link_id, :] for link_name, link_id in link_names.items()}
+        # for link_name, smpl_idx in link_names.items():
+        #     print(f"{link_name}: {smpl_joint_names[smpl_idx]}")
+        ret = {}
+        proceed = []
+        for link_name, link_id in link_names.items():
+            if link_id in proceed:
+                continue
+            else:
+                ret[link_name]=smpl_joints[:, link_id, :]
+                proceed.append(link_id)
+                # if 'ankle' in link_name:
+                #     ret[link_name][62:, 2] = 0.038531
         return ret
+    
+    def parse_contact(self, left_foot,
+                      right_foot):
+        return {
+            left_foot: 1-self.data['contact'][..., 0],
+            right_foot: 1-self.data['contact'][..., 1]
+        }
+        
 
 def get_data(data_path: str):
     
